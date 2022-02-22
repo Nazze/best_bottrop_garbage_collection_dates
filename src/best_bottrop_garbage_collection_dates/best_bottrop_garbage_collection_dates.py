@@ -7,6 +7,7 @@ import enum
 import requests
 import datetime
 import aiohttp
+import asyncio
 
 @dataclass
 class BESTBottropGarbageCollectionDates:
@@ -30,16 +31,17 @@ class BESTBottropGarbageCollectionDates:
             return x;
         else: return "";
 
-    def load_trash_types (self):
+    async def load_trash_types (self):
         # Load the trashtypes
         try:
-            trash_types = requests.get('https://www.best-bottrop.de/api/trashtype')
-        except requests.exceptions.RequestException:
-            print ("Could not load trashtypes!")
+            async with aiohttp.ClientSession() as session:
+                async with session.get('https://www.best-bottrop.de/api/trashtype') as trash_types_response:
+                    self.trash_types_json = await trash_types_response.json()
+        except aiohttp.ClientError:
+            print ("Client ERROR")
             return ""
-        self.trash_types_json = trash_types.json()
 
-    def get_dates_as_json(self, street, number) -> list[dict]:
+    async def get_dates_as_json(self, street, number) -> list[dict]:
         # Get the BEST street id code for a given street
         street_code = STREET_ID_DICT.get(street)
 
@@ -47,14 +49,13 @@ class BESTBottropGarbageCollectionDates:
 
         if (street_code != None and self.trash_types_json != None):
             try:
-                dates = requests.get('https://www.best-bottrop.de/api/street/{0}/house/{1}/collection'.format(street_code, number))
-            except requests.exceptions.RequestException:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get('https://www.best-bottrop.de/api/street/{0}/house/{1}/collection'.format(street_code, number)) as dates:
+                        dates_json = await dates.json()
+                        dates_json = list(filter(self._today_or_later, dates_json))
+            except aiohttp.ClientError as e:
                 print ("Could not load dates!")
-                return ""
-            dates_json = dates.json()
-            dates_json = list(filter(self._today_or_later, dates_json))
-
-            # now replace the BEST trashType codes with real names, e.g. 3F14EDC7 for Gelbe Tonne
+                raise e
 
             for date_item in dates_json:
                 date_item.update({"trashType": self._get_name_for_id(date_item.get("trashType"), self.trash_types_json)})
