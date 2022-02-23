@@ -37,8 +37,9 @@ class BESTBottropGarbageCollectionDates:
             async with aiohttp.ClientSession() as session:
                 async with session.get('https://www.best-bottrop.de/api/trashtype') as trash_types_response:
                     self.trash_types_json = await trash_types_response.json()
-        except aiohttp.ClientError:
-            print ("Client ERROR")
+        except aiohttp.ClientError as e:
+            print ("Could not load dates! Exception: {0}".format(e))
+            raise e
             return ""
 
     async def get_dates_as_json(self, street, number) -> list[dict]:
@@ -54,7 +55,7 @@ class BESTBottropGarbageCollectionDates:
                         dates_json = await dates.json()
                         dates_json = list(filter(self._today_or_later, dates_json))
             except aiohttp.ClientError as e:
-                print ("Could not load dates!")
+                print ("Could not load dates! Exception: {0}".format(e))
                 raise e
 
             for date_item in dates_json:
