@@ -59,6 +59,12 @@ async def test_load_dates_fail():
         print ("Could not load dates! Exception: {0}".format(e))
     assert (l != None and "" == l)
 
+def test_get_street_ids():
+    test_class = best_bottrop_garbage_collection_dates.BESTBottropGarbageCollectionDates()
+    street_dict = test_class.get_street_ids()
+    print (street_dict)
+    assert (type(street_dict) is dict)
+
 def silence_event_loop_closed(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
