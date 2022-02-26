@@ -42,6 +42,9 @@ class BESTBottropGarbageCollectionDates:
             raise e
             return ""
 
+    def get_street_ids(self):
+        return STREET_ID_DICT
+
     async def get_dates_as_json(self, street, number) -> list[dict]:
         # Get the BEST street id code for a given street
         street_code = STREET_ID_DICT.get(street)
