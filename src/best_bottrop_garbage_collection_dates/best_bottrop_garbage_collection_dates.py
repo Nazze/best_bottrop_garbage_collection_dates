@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 from dataclasses import dataclass
-from const import STREET_ID_DICT
+from .const import STREET_ID_DICT
 import enum
 import requests
 import datetime
