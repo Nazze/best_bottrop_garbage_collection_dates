@@ -31,7 +31,13 @@ class BESTBottropGarbageCollectionDates:
             return x;
         else: return "";
 
-    async def load_trash_types (self):
+    def get_street_id_dict (self):
+        return STREET_ID_DICT
+
+    def get_id_for_name(self, x):
+        return STREET_ID_DICT.get(x)
+
+    async def get_trash_types (self):
         # Load the trashtypes
         try:
             async with aiohttp.ClientSession() as session:
@@ -42,12 +48,9 @@ class BESTBottropGarbageCollectionDates:
             raise e
             return ""
 
-    def get_street_ids(self):
-        return STREET_ID_DICT
-
-    async def get_dates_as_json(self, street, number) -> list[dict]:
+    async def get_dates_as_json(self, street_code, number) -> list[dict]:
         # Get the BEST street id code for a given street
-        street_code = STREET_ID_DICT.get(street)
+        #street_code = STREET_ID_DICT.get(street)
 
         dates_json = ""
 

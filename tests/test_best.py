@@ -6,16 +6,15 @@ import requests
 from asyncio.proactor_events import _ProactorBasePipeTransport
 from functools import wraps
 
-
-import best_bottrop_garbage_collection_dates
+from best_bottrop_garbage_collection_dates import BESTBottropGarbageCollectionDates
 
 @pytest.mark.asyncio
 async def test_load_trash_types():
     print ("test_load_trash_types")
-    test_class = best_bottrop_garbage_collection_dates.BESTBottropGarbageCollectionDates()
+    test_class = BESTBottropGarbageCollectionDates()
     print (test_class)
     try:
-        await test_class.load_trash_types()
+        await test_class.get_trash_types()
     except aiohttp.ClientError as e:
         print ("Could not load dates! Exception: {0}".format(e))
     assert test_class.trash_types_json != ""
@@ -24,10 +23,10 @@ async def test_load_trash_types():
 async def test_load_trash_types_and_check_content():
     print ("test_load_trash_types")
     garbage_type_str = ""
-    test_class = best_bottrop_garbage_collection_dates.BESTBottropGarbageCollectionDates()
+    test_class = BESTBottropGarbageCollectionDates()
     print (test_class)
     try:
-        await test_class.load_trash_types()
+        await test_class.get_trash_types()
     except aiohttp.ClientError as e:
         print ("Could not load dates! Exception: {0}".format(e))
     if ( test_class.trash_types_json != None and test_class.trash_types_json != "" ):
@@ -42,8 +41,9 @@ async def test_load_dates_pass():
     print ("test_load_dates")
     l = None
     try:
-        test_class = best_bottrop_garbage_collection_dates.BESTBottropGarbageCollectionDates()
-        l = await test_class.get_dates_as_json("Steinmetzstraße", 4)
+        test_class = BESTBottropGarbageCollectionDates()
+        street_code = test_class.get_id_for_name("Steinmetzstraße")
+        l = await test_class.get_dates_as_json(street_code, 4)
     except aiohttp.ClientError as e:
         print ("Could not load dates! Exception: {0}".format(e))
     assert (l != None and type(l) is list)
@@ -53,14 +53,15 @@ async def test_load_dates_fail():
     print ("test_load_dates")
     l = None
     try:
-        test_class = best_bottrop_garbage_collection_dates.BESTBottropGarbageCollectionDates()
+        test_class = BESTBottropGarbageCollectionDates()
         l = await test_class.get_dates_as_json("bla",200)
+        print (l)
     except aiohttp.ClientError as e:
         print ("Could not load dates! Exception: {0}".format(e))
-    assert (l != None and "" == l)
+    assert (l != None and [] == l)
 
 def test_get_street_ids():
-    test_class = best_bottrop_garbage_collection_dates.BESTBottropGarbageCollectionDates()
+    test_class = BESTBottropGarbageCollectionDates()
     street_dict = test_class.get_street_ids()
     print (street_dict)
     assert (type(street_dict) is dict)
