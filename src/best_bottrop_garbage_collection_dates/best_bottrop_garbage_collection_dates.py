@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 from dataclasses import dataclass
 from .const import STREET_ID_DICT
 import enum
@@ -14,7 +13,7 @@ class BESTBottropGarbageCollectionDates:
     """ Class for managing connection and data to the BEST Bottrop garbage collection dates"""
 
     trash_types_json : list[dict] = ""
-    HTTPSession : aiohttp.ClientSession() = None
+    session_timeout = aiohttp.ClientTimeout (total = 10)
 
     def _get_name_for_id(self, x, json):
         for i in json:
@@ -40,10 +39,10 @@ class BESTBottropGarbageCollectionDates:
     async def get_trash_types (self):
         # Load the trashtypes
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(timeout = self.session_timeout) as session:
                 async with session.get('https://www.best-bottrop.de/api/trashtype') as trash_types_response:
                     self.trash_types_json = await trash_types_response.json()
-        except aiohttp.ClientError as e:
+        except (aiohttp.ClientError, aiohttp.ClientConnectionError, TimeoutError) as e:
             print ("Could not load dates! Exception: {0}".format(e))
             raise e
             return ""
@@ -56,11 +55,11 @@ class BESTBottropGarbageCollectionDates:
 
         if (street_code != None and self.trash_types_json != None):
             try:
-                async with aiohttp.ClientSession() as session:
+                async with aiohttp.ClientSession(timeout = self.session_timeout) as session:
                     async with session.get('https://www.best-bottrop.de/api/street/{0}/house/{1}/collection'.format(street_code, number)) as dates:
                         dates_json = await dates.json()
                         dates_json = list(filter(self._today_or_later, dates_json))
-            except aiohttp.ClientError as e:
+            except (aiohttp.ClientError, aiohttp.ClientConnectionError, TimeoutError) as e:
                 print ("Could not load dates! Exception: {0}".format(e))
                 raise e
 
