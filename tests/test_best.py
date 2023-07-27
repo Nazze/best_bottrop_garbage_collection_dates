@@ -6,6 +6,9 @@ import requests
 from asyncio.proactor_events import _ProactorBasePipeTransport
 from functools import wraps
 
+import sys
+sys.path.append ("/Users/denis/Documents/git/best_bottrop_garbage_collection_dates/best_bottrop_garbage_collection_dates/src")
+
 from best_bottrop_garbage_collection_dates import BESTBottropGarbageCollectionDates
 
 @pytest.mark.asyncio
@@ -62,7 +65,7 @@ async def test_load_dates_fail():
 
 def test_get_street_ids():
     test_class = BESTBottropGarbageCollectionDates()
-    street_dict = test_class.get_street_ids()
+    street_dict = test_class.get_street_id_dict()
     print (street_dict)
     assert (type(street_dict) is dict)
 
