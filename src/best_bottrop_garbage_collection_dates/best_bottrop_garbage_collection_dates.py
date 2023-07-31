@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from .const import STREET_ID_DICT
-import enum
-import requests
-import datetime
 import aiohttp
 import asyncio
+import enum
+import datetime
+import logging
+import requests
+
+_LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class BESTBottropGarbageCollectionDates:
@@ -43,9 +46,8 @@ class BESTBottropGarbageCollectionDates:
                 async with session.get('https://www.best-bottrop.de/api/trashtype') as trash_types_response:
                     self.trash_types_json = await trash_types_response.json()
         except (aiohttp.ClientError, aiohttp.ClientConnectionError, TimeoutError) as e:
-            print ("Could not load dates! Exception: {0}".format(e))
+            _LOGGER.debug ("Could not load dates due to exception: %s", type(e).__name__)
             raise e
-            return ""
 
     async def get_dates_as_json(self, street_code, number) -> list[dict]:
         # Get the BEST street id code for a given street
@@ -60,7 +62,7 @@ class BESTBottropGarbageCollectionDates:
                         dates_json = await dates.json()
                         dates_json = list(filter(self._today_or_later, dates_json))
             except (aiohttp.ClientError, aiohttp.ClientConnectionError, TimeoutError) as e:
-                print ("Could not load dates! Exception: {0}".format(e))
+                _LOGGER.debug ("Could not load dates due to exception: %s", type(e).__name__)
                 raise e
 
             for date_item in dates_json:
