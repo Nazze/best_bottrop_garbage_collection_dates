@@ -48,8 +48,8 @@ async def test_load_dates_pass():
     l = None
     try:
         test_class = BESTBottropGarbageCollectionDates()
-        street_code = test_class.get_id_for_name("Steinmetzstraße")
-        l = await test_class.get_dates_as_json(street_code, 4)
+        street_code = test_class.get_id_for_name("Ernst-Wilczok-Platz")
+        l = await test_class.get_dates_as_json(street_code, 1)
     except aiohttp.ClientError as e:
         LOGGER.error ("Could not load dates! Exception: {0}".format(e))
     assert (l != None and type(l) is list)
