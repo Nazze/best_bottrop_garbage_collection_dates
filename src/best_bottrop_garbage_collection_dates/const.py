@@ -1,5 +1,7 @@
 BASE_URL: str = "https://www.best-bottrop.de"
 DEFAULT_TIMEOUT: int = 10
+CHECK_COOKIE_NAME: str = "chk_ok"
+CHECK_COOKIE_VALUE: str = "1"
 STREET_ID_DICT: dict = {
     "Adelsbredde" : "241D7097",
     "Adolf-Kolping-Straße" : "4807D8DB",
