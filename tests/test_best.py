@@ -115,6 +115,52 @@ async def test_load_dates_fail():
         LOGGER.info(e, exc_info = False)
     assert (l != None and [] == l)
 
+async def start_local_server(handler):
+    local_app = web.Application()
+    local_app.router.add_get('/api/trashtype', handler)
+    local_runner = web.AppRunner(local_app)
+    await local_runner.setup()
+    site = web.TCPSite(local_runner, 'localhost', 0)
+    await site.start()
+    port = site._server.sockets[0].getsockname()[1]
+    return local_runner, port
+
+@pytest.mark.asyncio
+async def test_check_cookie_is_sent():
+    LOGGER.info("test_check_cookie_is_sent")
+    received = {}
+
+    async def handler(request):
+        received["cookie"] = request.cookies.get("chk_ok")
+        return web.json_response([])
+
+    local_runner, port = await start_local_server(handler)
+    try:
+        test_class = BESTBottropGarbageCollectionDates()
+        test_class.base_url = "http://localhost"
+        test_class.base_url_port = port
+        await test_class.get_trash_types()
+    finally:
+        await local_runner.cleanup()
+    assert received["cookie"] == "1"
+
+@pytest.mark.asyncio
+async def test_html_response_raises_error():
+    LOGGER.info("test_html_response_raises_error")
+
+    async def handler(request):
+        return web.Response(text="<html>check</html>", content_type="text/html")
+
+    local_runner, port = await start_local_server(handler)
+    try:
+        test_class = BESTBottropGarbageCollectionDates()
+        test_class.base_url = "http://localhost"
+        test_class.base_url_port = port
+        with pytest.raises(aiohttp.ContentTypeError):
+            await test_class.get_trash_types()
+    finally:
+        await local_runner.cleanup()
+
 def test_get_street_ids():
     test_class = BESTBottropGarbageCollectionDates()
     street_dict = test_class.get_street_id_dict()

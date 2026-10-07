@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from .const import STREET_ID_DICT, BASE_URL, DEFAULT_TIMEOUT
+from .const import STREET_ID_DICT, BASE_URL, DEFAULT_TIMEOUT, CHECK_COOKIE_NAME, CHECK_COOKIE_VALUE
 import aiohttp
 import datetime
 import logging
+from yarl import URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,38 +39,47 @@ class BESTBottropGarbageCollectionDates:
     def get_id_for_name(self, x):
         return STREET_ID_DICT.get(x)
 
+    def _get_base_url(self) -> str:
+        # check if port was overwritten
+        if self.base_url_port != None:
+            return self.base_url+":"+str(self.base_url_port)
+        return self.base_url
+
+    def _create_session(self, base_url: str) -> aiohttp.ClientSession:
+        # The website expects the cookie that its browser check sets via JavaScript
+        cookie_jar = aiohttp.CookieJar(unsafe=True)
+        cookie_jar.update_cookies({CHECK_COOKIE_NAME: CHECK_COOKIE_VALUE}, response_url=URL(base_url))
+        return aiohttp.ClientSession(timeout = self.session_timeout, cookie_jar = cookie_jar)
+
+    async def _get_json(self, url: str):
+        async with self._create_session(self._get_base_url()) as session:
+            async with session.get(url) as response:
+                response.raise_for_status()
+                # raises ContentTypeError (a ClientError) if the server returned e.g. an HTML page
+                return await response.json()
+
     async def get_trash_types (self):
         # Load the trashtypes
-        # check if port was overwritten
-        base_url : str = ""
-        if self.base_url_port != None:
-            base_url = self.base_url+":"+str(self.base_url_port)
-        else:
-            base_url = self.base_url
-
         try:
-            async with aiohttp.ClientSession(timeout = self.session_timeout) as session:
-                async with session.get(base_url+'/api/trashtype') as trash_types_response:
-                    self.trash_types_json = await trash_types_response.json()
+            self.trash_types_json = await self._get_json(self._get_base_url()+'/api/trashtype')
         except (aiohttp.ClientError, aiohttp.ClientConnectionError, TimeoutError) as e:
             _LOGGER.debug ("Could not load dates due to exception: %s", type(e).__name__)
             raise e
 
     async def get_dates_as_json(self, street_code, number) -> list[dict]:
         dates_json = ""
-        # check if port was overwritten
-        base_url : str = ""
-        if self.base_url_port != None:
-            base_url = self.base_url+":"+str(self.base_url_port)
-        else:
-            base_url = self.base_url
 
         if (street_code != None and self.trash_types_json != None):
-            try:  
-                async with aiohttp.ClientSession(timeout = self.session_timeout) as session:
-                   async with session.get(base_url+'/api/street/{0}/house/{1}/collection'.format(street_code, number)) as dates:
-                        dates_json = await dates.json()
-                        dates_json = list(filter(self._today_or_later, dates_json))
+            try:
+                url = self._get_base_url()+'/api/street/{0}/house/{1}/collection'.format(street_code, number)
+                dates_json = await self._get_json(url)
+                dates_json = list(filter(self._today_or_later, dates_json))
+            except aiohttp.ClientResponseError as e:
+                if e.status == 404:
+                    # unknown street or house number: there are no dates
+                    return []
+                _LOGGER.debug ("Could not load dates due to exception: %s", type(e).__name__)
+                raise e
             except (aiohttp.ClientError, aiohttp.ClientConnectionError, TimeoutError) as e:
                 _LOGGER.debug ("Could not load dates due to exception: %s", type(e).__name__)
                 raise e
@@ -78,4 +88,3 @@ class BESTBottropGarbageCollectionDates:
                 date_item.update({"trashType": self._get_name_for_id(date_item.get("trashType"), self.trash_types_json)})
 
         return dates_json
-        
